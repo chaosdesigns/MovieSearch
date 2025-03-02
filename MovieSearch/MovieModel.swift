@@ -19,14 +19,7 @@ class MovieModel: ObservableObject {
 	@Published var errorMessage: String?
 
 	// some working variables as we page the load
-	@Published var isLoading = false {
-		didSet {
-			if isLoading == false && pendingFetch == true {
-				// trigger the pending fetch
-				changeFetchParameters()
-			}
-		}
-	}
+	@Published var isLoading = false
 	@Published var searchText = "" {
 		didSet {
 			// as the user changes the text, we re-trigger the search
@@ -71,7 +64,7 @@ class MovieModel: ObservableObject {
 			pendingFetch = true
 			return
 		}
-		pendingFetch = false	// we are fetching, so clear pending flag
+		pendingFetch = false
 		movies = [MovieRec]()
 		totalCount = 0
 		currentPage = 0
@@ -101,7 +94,7 @@ class MovieModel: ObservableObject {
 
 	// called to load a page of search results and process them into the model
 	func loadAPageOfResults(pageNum: Int) {
-		guard !searchText.isEmpty else {
+		guard !isLoading, !searchText.isEmpty else {
 			return
 		}
 		errorMessage = nil
@@ -113,6 +106,7 @@ class MovieModel: ObservableObject {
 		print("Loading page using url: [\(urlString)]") // handy debug statement
 
 		guard let url = URL(string: urlString) else {
+			print("Invalid url: [\(urlString)]")
 			errorMessage = "Invalid url: [\(urlString)]"
 			return
 		}
@@ -127,6 +121,7 @@ class MovieModel: ObservableObject {
 				DispatchQueue.main.async {
 					self.errorMessage = "Error: \(error.localizedDescription)"
 				}
+				print("Error: \(error.localizedDescription)")
 				return
 			}
 
@@ -134,35 +129,55 @@ class MovieModel: ObservableObject {
 				DispatchQueue.main.async {
 					self.errorMessage = "No data received."
 				}
+				print("Error: No data received.")
 				return
 			}
 
 			do {
 				let decoder = JSONDecoder()
 				let results = try decoder.decode(SearchResult.self, from: data)
-				guard let movies = results.Search else {
+
+				guard let validResponse = results.Response else {
+					print("Error: Invalid Response.")
 					return
 				}
-
-				DispatchQueue.main.async() {
-					for movie in movies {
-						let movieInfo = MovieRec(id: UUID(), movie: movie, posterImage: nil)
-						let nextIndex = self.movies.count
-						print("Next Index: \(nextIndex)")
-						self.movies.append(movieInfo)
-						self.requestPosterForMovieIndex(nextIndex)
+				if validResponse == "False" {
+					let errorMsg = results.Error ?? "No error message provided."
+					DispatchQueue.main.async {
+						self.errorMessage = errorMsg
 					}
-					self.currentPage += 1
-					self.totalCount = Int(results.totalResults ?? "0") ?? 0
-					self.canLoadMorePages = self.movies.count < self.totalCount
+					print(results.Error ?? "No error message provided.")
+					return
+				}
+				DispatchQueue.main.async() {
+					self.processFetchedResults(results: results)
 				}
 			} catch {
 				DispatchQueue.main.async {
 					self.errorMessage = "Error parsing JSON: \(error.localizedDescription)"
 				}
+				print("Error parsing JSON: \(error.localizedDescription)")
 				return
 			}
 		}.resume()
+	}
+
+	func processFetchedResults(results: SearchResult) {
+		print("processFetchedResults")
+
+		guard let movies = results.Search else {
+			print("Error No search results.")
+			return
+		}
+		for movie in movies {
+			let movieInfo = MovieRec(id: UUID(), movie: movie, posterImage: nil)
+			let nextIndex = self.movies.count
+			self.movies.append(movieInfo)
+			self.requestPosterForMovieIndex(nextIndex)
+		}
+		currentPage += 1
+		totalCount = Int(results.totalResults ?? "0") ?? 0
+		canLoadMorePages = movies.count < totalCount
 	}
 
 	// called after a movie record is created... to load its poster
@@ -211,6 +226,7 @@ public struct SearchResult: Equatable, Decodable {
 	public let Search: [MovieEntry]?
 	public let Response: String?
 	public let totalResults: String?
+	public let Error: String?
 }
 
 public struct Rating: Equatable, Decodable {
