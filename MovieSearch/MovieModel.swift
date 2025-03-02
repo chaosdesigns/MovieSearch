@@ -71,7 +71,7 @@ class MovieModel: ObservableObject {
 			pendingFetch = true
 			return
 		}
-		pendingFetch = false			// we are fetching, so clear pending flag
+		pendingFetch = false	// we are fetching, so clear pending flag
 		movies = [MovieRec]()
 		totalCount = 0
 		currentPage = 0
@@ -83,7 +83,7 @@ class MovieModel: ObservableObject {
 	// this determines if more results need to be loaded (soon)
 	func fetchMoreResultsIfNeeded(currentMovie movie:  MovieRec) {
 
-		let rowsBeforeLoading = -10	// ...(10 rows before needed)
+		let rowsBeforeLoading = -5	// ...(5 rows before needed)
 		let thresholdIndex = movies.index(movies.endIndex, offsetBy: rowsBeforeLoading)
 		if movies.firstIndex(where: { $0.id == movie.id }) == thresholdIndex {
 			fetchMoreResults()
@@ -93,7 +93,7 @@ class MovieModel: ObservableObject {
 	// begins and continues loading pages of results
 	private func fetchMoreResults() {
 		guard !isLoading && canLoadMorePages else {
-			return	// already loading... exit
+			return
 		}
 
 		loadAPageOfResults(pageNum: currentPage)
@@ -146,8 +146,9 @@ class MovieModel: ObservableObject {
 
 				DispatchQueue.main.async() {
 					for movie in movies {
-						let movieInfo = MovieRec(id: UUID().uuidString, movie: movie, posterImage: nil)
+						let movieInfo = MovieRec(id: UUID(), movie: movie, posterImage: nil)
 						let nextIndex = self.movies.count
+						print("Next Index: \(nextIndex)")
 						self.movies.append(movieInfo)
 						self.requestPosterForMovieIndex(nextIndex)
 					}
@@ -201,7 +202,7 @@ public struct MovieEntry: Equatable, Decodable {
 }
 
 public struct MovieRec: Identifiable {
-	public var id: String
+	public var id: UUID
 	public var movie: MovieEntry
 	public var posterImage: UIImage? = nil
 }
