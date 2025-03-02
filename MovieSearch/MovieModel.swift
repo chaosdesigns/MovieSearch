@@ -17,8 +17,6 @@ class MovieModel: ObservableObject {
 	@Published var movies = [MovieRec]()
 	@Published var totalCount = 0
 	@Published var errorMessage: String?
-
-	// some working variables as we page the load
 	@Published var isLoading = false
 	@Published var searchText = "" {
 		didSet {
@@ -33,10 +31,6 @@ class MovieModel: ObservableObject {
 	private var canLoadMorePages = true
 
 	static var shared = MovieModel()
-
-	init() {
-		fetchMoreResults()
-	}
 
 	var messageText: String {
 		if let errorMessage = errorMessage {
@@ -99,12 +93,8 @@ class MovieModel: ObservableObject {
 		}
 		errorMessage = nil
 
-		var urlString = "\(basePath)?s=\(searchText)&page=\(currentPage+1)&type=movie&apikey=\(apiKey)"
-		// cleanup the URL so we dont crash
-		urlString = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
-		urlString = urlString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
-		print("Loading page using url: [\(urlString)]") // handy debug statement
-
+		let urlString = "\(basePath)?s=\(searchText)&page=\(currentPage+1)&type=movie&apikey=\(apiKey)"
+		//print("Loading page using url: [\(urlString)]") // handy debug statement
 		guard let url = URL(string: urlString) else {
 			print("Invalid url: [\(urlString)]")
 			errorMessage = "Invalid url: [\(urlString)]"
@@ -185,6 +175,8 @@ class MovieModel: ObservableObject {
 		guard index < movies.count,
 			  movies[index].posterImage == nil,
 			  let posterUrlString = movies[index].movie.Poster,
+			  !posterUrlString.isEmpty,
+			  posterUrlString != "N/A",
 			  let url = URL(string: posterUrlString) else {
 			return
 		}
@@ -205,6 +197,7 @@ class MovieModel: ObservableObject {
 	}
 
 	private func getData(from url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> ()) {
+		//print("Poster URL: \(url)")
 		URLSession.shared.dataTask(with: url, completionHandler: completion).resume()
 	}
 }
