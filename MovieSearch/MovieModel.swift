@@ -63,6 +63,7 @@ class MovieModel: ObservableObject {
 		totalCount = 0
 		currentPage = 0
 		canLoadMorePages = true
+		errorMessage = nil
 		fetchMoreResults()
 	}
 
