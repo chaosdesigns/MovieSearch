@@ -17,9 +17,8 @@ struct MovieSearchView: View {
 				List {
 					ForEach(model.movies) { movie in
 						MovieListCell(movie: movie)
-							.onAppear() {
-								// when the cell appears, fetch more movies, if needed
-								model.fetchMoreResultsIfNeeded(currentMovie: movie)
+							.task { // when the cell appears, fetch more movies, if needed
+								await model.handleListCellBecomesVisible(currentMovie: movie)
 							}
 					}
 				}
@@ -38,6 +37,11 @@ struct MovieSearchView: View {
 				}
 			}
 			.searchable(text: $model.searchText, prompt: "Find movie...")
+			.onChange(of: model.searchText) { _, _ in
+				Task {
+					await model.handleSearchTextChanged()
+				}
+			}
 			.navigationTitle("Movie Search")
 			.toolbar {
 				ToolbarItem(placement: .navigationBarTrailing) {
