@@ -59,8 +59,10 @@ class OMDbModel: ObservableObject {
 	func loadPosterForMovie(forIndex: Int, fromUrl: URL) async throws -> (index: Int, image: UIImage?) {
 		let (data, response) = try await URLSession.shared.data(from: fromUrl)
 
-		guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-			throw "The server responded with an error."
+		let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+		guard statusCode == 200 else {
+			let statusCodeMsg = statusCode == 0 ? "" : "(\(statusCode)) "
+			throw "The server responded with an error code \(statusCodeMsg)while loading from poster url \(fromUrl)."
 		}
 		return (
 			index: forIndex,

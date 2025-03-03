@@ -38,9 +38,7 @@ struct MovieSearchView: View {
 			}
 			.searchable(text: $model.searchText, prompt: "Find movie...")
 			.onChange(of: model.searchText) { _, _ in
-				Task {
-					await model.handleSearchTextChanged()
-				}
+				model.handleSearchTextChanged()
 			}
 			.navigationTitle("Movie Search")
 			.toolbar {

@@ -50,16 +50,18 @@ import SwiftUI
 	}
 
 	// called when the searchText changes to reload the list with movies that match the user's search parameter
-	func handleSearchTextChanged() async {
-		do {
-			movies = [MovieRec]()
-			totalCount = 0
-			currentPage = 0
-			canLoadMorePages = true
-			errorMessage = nil
-			try await fetchMoreResultsUsingOmdb()
-		} catch {
-			errorMessage = error.localizedDescription
+	func handleSearchTextChanged() {
+		Task {
+			do {
+				movies = [MovieRec]()
+				totalCount = 0
+				currentPage = 0
+				canLoadMorePages = true
+				errorMessage = nil
+				try await fetchMoreResultsUsingOmdb()
+			} catch {
+				errorMessage = error.localizedDescription
+			}
 		}
 	}
 
@@ -111,6 +113,8 @@ import SwiftUI
 							}
 							movies[poster.index].posterImage = poster.image
 						} catch {
+							// no point exposing this error to the user
+							// just print to console so dev can see it
 							print("Error loading poster for movie \(nextIndex): \(error)")
 						}
 					}
