@@ -12,14 +12,16 @@ struct MovieSearchView: View {
 	@State private var showAbout = false
 
 	var body: some View {
-		NavigationView {
+		NavigationStack {
 			VStack {
 				List {
 					ForEach(model.movies) { movie in
-						MovieListCell(movie: movie)
-							.task { // when the cell appears, fetch more movies, if needed
-								await model.handleListCellBecomesVisible(currentMovie: movie)
-							}
+						NavigationLink(destination: DetailView(movie: movie)) {
+							MovieListCell(movie: movie)
+								.task { // when the cell appears, fetch more movies, if needed
+									await model.handleListCellBecomesVisible(currentMovie: movie)
+								}
+						}
 					}
 				}
 				.listStyle(PlainListStyle())
@@ -164,6 +166,61 @@ fileprivate struct AboutView: View {
 	}
 }
 
+struct DetailView: View {
+	@StateObject private var model = MovieDetailsModel.shared
+	var movie: MovieRec
+
+	var body: some View {
+		VStack(spacing: 20) {
+			HStack {
+				Text("\(movie.movie.Title ?? "Details")")
+					.font(.title2)
+					.bold()
+				Spacer()
+			}
+			.padding(.horizontal)
+
+			if model.hasPlotText {
+				HStack {
+					Image(uiImage: movie.posterImage ?? UIImage(named: "no-poster")!)
+						.resizable()
+						.aspectRatio(contentMode: .fit)
+						.frame(width: 120, height: 150)
+					Spacer()
+					Text("\(model.plotText)")
+						.font(.headline)
+				}
+				.padding(.horizontal)
+			}
+
+			if model.isLoading {
+				ProgressView()
+			} else {
+				if model.errorMessage != nil {
+					Text(model.errorMessage!)
+						.foregroundColor(.red)
+				} else {
+					List(model.details, id: \.0) { (title, value) in
+						HStack {
+							Text(title)
+								.font(.headline)
+							Spacer()
+							Text(value)
+								.foregroundColor(.gray)
+						}
+						.padding(.vertical, 5)
+					}
+					Spacer()
+				}
+			}
+		}
+		.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+		.task {
+			await model.loadDetailsFor(movie: movie)
+		}
+	}
+}
+
 //MARK: - Previews
 
 #Preview("Search") {
@@ -176,6 +233,7 @@ fileprivate struct AboutView: View {
 		movie: MovieEntry(
 			Title: "Star Wars: Empire Strikes Back",
 			Year: "1983",
+			imdbID: "12345",
 			Type: nil,
 			Poster: nil),
 		posterImage: UIImage(named: "no-poster")!)
@@ -191,4 +249,17 @@ fileprivate struct AboutView: View {
 }
 #Preview("About") {
 	AboutView()
+}
+
+#Preview("Detail") {
+	DetailView(movie: MovieRec(
+		id: UUID(),
+		movie: MovieEntry(
+			Title: "Star Wars: Empire Strikes Back",
+			Year: "1983",
+			imdbID: "tt12274228",
+			Type: nil,
+			Poster: nil),
+		posterImage: UIImage(named: "no-poster")!)
+	)
 }

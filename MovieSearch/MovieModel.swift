@@ -4,10 +4,6 @@
 //
 //  Created by Jeff Ferguson on 2025-02-28.
 //
-//  Uses OMDb API  http://www.omdbapi.com/
-//  Free API key: http://www.omdbapi.com/apik
-//  My key: 54af0851
-//  OMDb API: http://www.omdbapi.com/?i=tt3896198&apikey=54af0851
 
 
 import Foundation

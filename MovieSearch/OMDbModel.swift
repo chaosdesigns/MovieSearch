@@ -69,6 +69,36 @@ class OMDbModel: ObservableObject {
 			image: UIImage(data: data)
 		)
 	}
+
+	// called to load a the details of a particular movie
+	func loadMovieDetails(movieID: String) async throws -> MovieDetail {
+		guard !movieID.isEmpty else {
+			throw "Movie ID is empty."
+		}
+
+		let urlString = "\(basePath)?i=\(movieID)&apikey=\(apiKey)"
+		print("Loading page using url: [\(urlString)]") // handy debug statement
+		guard let url = URL(string: urlString) else {
+			throw "Invalid url: [\(urlString)]"
+		}
+
+		let (data, response) = try await URLSession.shared.data(from: url)
+
+		guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+			throw "The server responded with an error."
+		}
+		guard let results = try? JSONDecoder().decode(MovieDetail.self, from: data) else {
+			throw "The server response was not recognized. (Error parsing JSON)"
+		}
+		guard let validResponse = results.Response else {
+			throw "Error: Invalid Response."
+		}
+		guard validResponse == "True" else {
+			throw (results.Error ?? "No error message provided.")
+		}
+
+		return results
+	}
 }
 
 //MARK: - Structures
@@ -76,6 +106,7 @@ class OMDbModel: ObservableObject {
 public struct MovieEntry: Equatable, Decodable {
 	public let Title: String?		//display
 	public let Year: String?		//display
+	public let imdbID: String?
 	public let `Type`: String?
 	public let Poster: String?		//display
 }
